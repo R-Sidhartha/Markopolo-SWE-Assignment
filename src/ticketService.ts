@@ -19,6 +19,38 @@ export async function purchaseTickets(
   eventId: string,
   quantity: number,
 ): Promise<number[]> {
+  const issued = await pool.query<{ ticket_number: number }>(
+    `
+      WITH updated AS (
+        UPDATE ticket_pools
+        SET available = available - $1
+        WHERE event_id = $2 AND available >= $1
+        RETURNING event_id, total, available
+      ),
+      ins AS (
+        INSERT INTO issued_tickets (event_id, user_id, ticket_number)
+        SELECT
+          updated.event_id,
+          $3,
+          gs
+        FROM updated,
+        generate_series(
+          updated.total - (updated.available + $1) + 1,
+          updated.total - updated.available
+        ) AS gs
+        RETURNING ticket_number
+      )
+      SELECT ticket_number
+      FROM ins
+      ORDER BY ticket_number ASC
+    `,
+    [quantity, eventId, userId],
+  );
+
+  if (issued.rows.length === quantity) {
+    return issued.rows.map((r) => r.ticket_number);
+  }
+
   const availableResult = await pool.query<TicketPool>(
     "SELECT * FROM ticket_pools WHERE event_id = $1",
     [eventId],
@@ -28,31 +60,7 @@ export async function purchaseTickets(
     throw new Error("Event not found");
   }
 
-  const ticketPool = availableResult.rows[0];
-
-  if (!ticketPool || ticketPool.available < quantity) {
-    throw new Error("Not enough tickets available");
-  }
-
-  const currentTotal = ticketPool.total - ticketPool.available;
-  const ticketNumbers: number[] = [];
-
-  for (let i = 0; i < quantity; i++) {
-    const ticketNumber = currentTotal + i + 1;
-    ticketNumbers.push(ticketNumber);
-
-    await pool.query(
-      "INSERT INTO issued_tickets (event_id, user_id, ticket_number) VALUES ($1, $2, $3)",
-      [eventId, userId, ticketNumber],
-    );
-  }
-
-  await pool.query(
-    "UPDATE ticket_pools SET available = available - $1 WHERE event_id = $2",
-    [quantity, eventId],
-  );
-
-  return ticketNumbers;
+  throw new Error("Not enough tickets available");
 }
 
 export async function getPool(): Promise<Pool> {
