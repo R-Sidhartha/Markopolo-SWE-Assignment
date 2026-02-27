@@ -1,3 +1,72 @@
+# Ticket Service – Concurrency Fix Assignment
+
+This repository contains three stages of the service:
+
+- Original buggy implementation (race condition exists)
+- Buggy version + reproduction script
+- Final fixed implementation
+
+Each stage is tagged so it’s easy to test everything step by step.
+
+---
+
+# 🏷 Git Tags
+
+The repo includes the following tags:
+
+- `original-buggy-version` → Original implementation (contains race condition)
+- `reproduction-added` → Buggy version + repro script added
+- `fixed-version` → Final corrected implementation
+
+You can switch between versions using:
+
+```bash
+git checkout <tag-name>
+```
+# ✅ Testing the buggy Version
+
+How to Reproduce the Bug
+Step 1 – Checkout buggy version with repro script
+```bash
+git checkout reproduction-added
+```
+
+Step 2 – Start the server again
+```bash
+npm run dev
+```
+
+Step 3 – Run the same repro script
+```bash
+npm run repro
+```
+Expected Result (buggy Version)
+You should now see:
+- BUG REPRODUCED: duplicates and/or overselling detected.
+- A Table showing duplicate tickets 
+
+# ✅ Testing the Fixed Version
+
+Step 1 – Checkout the fixed version
+```bash
+git checkout fixed-version
+```
+
+Step 2 – Start the server again
+```bash
+npm run dev
+```
+
+Step 3 – Run the same repro script
+```bash
+npm run repro
+```
+Expected Result (fixed Version)
+You should now see:
+- \nNo duplicates / oversell observed. This likely means the service has already been fixed.
+- An empty Table, indicating no duplicates
+
+
 # Ticket Service - Environment Setup
 
 ## Prerequisites
